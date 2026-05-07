@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Δ DeltaForm Check</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Δ DeltaForm Check</h1>
+  <span class="subtitle">마커 인식 검사 (v2 · js-aruco2)</span>
+</header>
+
+<main id="app">
+
+<!-- ====== 시작 화면 ====== -->
+<section id="screen-home" class="screen active">
+
+  <div class="card">
+    <h2>📋 검사 설정</h2>
+
+    <label>ArUco 사전</label>
+    <select id="dict-select">
+      <option value="DICT_4X4_50" selected>DICT_4X4_50 (권장)</option>
+      <option value="DICT_4X4_100">DICT_4X4_100</option>
+      <option value="DICT_4X4_250">DICT_4X4_250</option>
+      <option value="DICT_5X5_50">DICT_5X5_50</option>
+      <option value="DICT_5X5_100">DICT_5X5_100</option>
+      <option value="DICT_6X6_50">DICT_6X6_50</option>
+      <option value="DICT_6X6_250">DICT_6X6_250</option>
+      <option value="DICT_7X7_50">DICT_7X7_50</option>
+      <option value="DICT_ARUCO_ORIGINAL">DICT_ARUCO_ORIGINAL</option>
+    </select>
+
+    <label>예상 마커 ID (콤마 구분, 비우면 모든 ID 허용)</label>
+    <input type="text" id="expected-ids" value="0,1,2,3,4,5" inputmode="numeric">
+
+    <label>예상 마커 개수 (사진당)</label>
+    <input type="number" id="expected-count" value="1" min="0" max="20" inputmode="numeric">
+    <p class="hint">한 사진에 평균 몇 개 마커가 보여야 하는지. 0이면 검사 안 함.</p>
+
+    <label>최대 검출 허용 오차 (선택)</label>
+    <select id="hamming-mode">
+      <option value="default" selected>기본 (사전별 자동)</option>
+      <option value="strict">엄격 (false positive 최소화)</option>
+      <option value="relaxed">관대 (작은/흐린 마커도 시도)</option>
+    </select>
+  </div>
+
+  <div class="actions">
+    <button class="big primary" id="btn-camera">
+      📷 사진 촬영
+    </button>
+    <button class="big secondary" id="btn-gallery">
+      🖼️ 갤러리에서 선택
+    </button>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*" capture="environment" hidden>
+  <input type="file" id="file-input-gallery" accept="image/*" hidden>
+
+  <details class="card help-card">
+    <summary>📖 사용 안내</summary>
+    <p><b>현장 사용 흐름</b></p>
+    <ol>
+      <li>대상체에 마커 부착, 셋업 완료</li>
+      <li>'사진 촬영' 또는 '갤러리에서 선택'</li>
+      <li>1~3초 후 결과 표시</li>
+      <li>✅이면 본 촬영 진행</li>
+      <li>⚠️/❌이면 안내에 따라 셋업 조정 후 재촬영</li>
+    </ol>
+    <p><b>검사 항목</b></p>
+    <ul>
+      <li>마커 검출 / ID 매칭</li>
+      <li>픽셀 크기 (사진 대비 %)</li>
+      <li>빛 반사 / 과노출</li>
+      <li>그림자 / 저조도</li>
+      <li>비스듬한 각도</li>
+      <li>곡면 변형 (변 비율)</li>
+    </ul>
+    <p class="muted small">완전 오프라인 동작 — 사진은 외부로 전송되지 않습니다.</p>
+  </details>
+
+</section>
+
+
+<!-- ====== 결과 화면 ====== -->
+<section id="screen-result" class="screen">
+  <div class="result-topbar">
+    <button class="back-btn" id="btn-back">← 다시</button>
+    <span class="result-filename" id="result-filename"></span>
+  </div>
+
+  <div id="result-overall" class="overall-banner"></div>
+
+  <div class="result-image-wrap">
+    <canvas id="result-canvas"></canvas>
+  </div>
+
+  <div id="result-summary" class="card"></div>
+
+  <div id="result-markers"></div>
+
+  <div class="actions">
+    <button class="big primary" id="btn-camera-again">📷 다시 촬영</button>
+  </div>
+</section>
+
+
+<!-- ====== 처리중 오버레이 ====== -->
+<div id="processing" class="processing hidden">
+  <div class="spinner"></div>
+  <p id="processing-msg">마커 검사 중...</p>
+</div>
+
+</main>
+
+<footer class="footer">
+  Δ DeltaForm Check · v2.0 · Local-only · Powered by js-aruco2
+</footer>
+
+<!-- js-aruco2 의존성 (사용자가 별도 다운로드해 같은 폴더에 둠) -->
+<script src="cv.js"></script>
+<script src="aruco.js"></script>
+<!-- OpenCV ArUco 사전 데이터 (DICT_4X4_50 등) -->
+<script src="aruco_dicts_data.js"></script>
+<!-- 우리 앱 -->
+<script src="app.js"></script>
+<script>
+// PWA — Service Worker 등록
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .then(reg => console.log("SW registered:", reg.scope))
+      .catch(err => console.warn("SW registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>
