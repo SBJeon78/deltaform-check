@@ -1,4 +1,4 @@
-const CACHE_VERSION = "deltaform-check-v2";
+const CACHE_VERSION = "deltaform-check-v3";
 const ASSETS = [
   "./",
   "./index.html",
