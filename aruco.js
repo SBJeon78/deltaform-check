@@ -21,14 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-/*
-References:
-- "ArUco: a minimal library for Augmented Reality applications based on OpenCv"
-  http://www.uco.es/investiga/grupos/ava/node/26
-- "js-aruco: a port to JavaScript of the ArUco library"
-  https://github.com/jcmellado/js-aruco
-*/
-
 var AR = {};
 var CV = this.CV || require('./cv').CV;
 this.AR = AR;
@@ -269,13 +261,12 @@ AR.Detector.prototype.detect = function (image) {
   var allPolys = [];
   var allCandidates = [];
 
-  // 1. 다중 임계값 패스 (Multi-pass Thresholding) 적용
-  // 작은 윈도우 적응형(기본), 큰 윈도우 적응형(cv.js 최대치), 전역 Otsu 임계값을 모두 시도하여
-  // 화면을 가득 채우는 거대한 마커나 조명이 불균일한 환경에서도 인식률을 극대화합니다.
+  // 다중 임계값 패스 (Multi-pass Thresholding) 적용
+  // 작은 윈도우 적응형(기본), 큰 윈도우 적응형(cv.js 최대치), 전역 Otsu 임계값을 모두 시도
   var passes = [
-    { type: 'adaptive', kernel: 2 },   // 5x5 블러 - 기본 (작은/일반 마커용)
-    { type: 'adaptive', kernel: 15 },  // 31x31 블러 - 확장 (화면에 큰 마커용)
-    { type: 'otsu' }                   // Otsu 전역 - 화면을 꽉 채우거나 극단적으로 큰 마커용
+    { type: 'adaptive', kernel: 2 },
+    { type: 'adaptive', kernel: 15 },
+    { type: 'otsu' }
   ];
 
   for (var p = 0; p < passes.length; p++) {
@@ -288,9 +279,7 @@ AR.Detector.prototype.detect = function (image) {
 
     this.contours = CV.findContours(this.thres, this.binary);
     
-    // 2. 다각형 오차 허용률(epsilon) 및 최소 길이 완화
-    // Pro 버전의 polygonalApproxAccuracyRate 완화와 동일하게 epsilon을 0.05에서 0.08로,
-    // minLength를 10에서 5로 낮추어 곡면 등으로 인해 다소 찌그러진 마커도 후보군으로 포용합니다.
+    // 다각형 오차 허용률(epsilon) 완화
     var passCandidates = this.findCandidates(this.contours, image.width * 0.01, 0.08, 5);
     passCandidates = this.clockwiseCorners(passCandidates);
     passCandidates = this.notTooNear(passCandidates, 10);
@@ -304,7 +293,6 @@ AR.Detector.prototype.detect = function (image) {
       }
     }
     
-    // UI 렌더링용으로 모든 패스의 후보군을 누적 저장
     allPolys = allPolys.concat(this.polys);
     allCandidates = allCandidates.concat(passCandidates);
   }
